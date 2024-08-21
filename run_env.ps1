@@ -1,1 +1,1 @@
-.\env_mediapipe\Scripts\activate
+.\venv_mediapipe\Scripts\activate
