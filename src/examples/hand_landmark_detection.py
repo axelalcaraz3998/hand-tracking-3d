@@ -9,7 +9,7 @@ from mediapipe.tasks.python import vision
 
 # Get model path relative to current directory
 dirname = os.path.dirname(__file__)
-model_path = os.path.join(dirname, "./models/hand_landmarker.task")
+model_path = os.path.join(dirname, "./../models/hand_landmarker.task")
 
 BaseOptions = mp.tasks.BaseOptions
 HandLandmarker = mp.tasks.vision.HandLandmarker
@@ -38,7 +38,7 @@ with HandLandmarker.create_from_options(options) as landmarker:
 
   while True:
     # Capture frame
-    ret, frame = capture.read()
+    ret, frame = capture.read(cv.CAP_ANY)
     # Get frame timestamp in milliseconds and parse it to an integer
     frame_timestamp_ms = int(capture.get(cv.CAP_PROP_POS_MSEC))
 
@@ -48,8 +48,7 @@ with HandLandmarker.create_from_options(options) as landmarker:
       break
 
     # Convert frame to MediaPipe image object
-    image_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-    mp_image = mp.Image(image_format = mp.ImageFormat.SRGB, data = image_rgb)
+    mp_image = mp.Image(image_format = mp.ImageFormat.SRGB, data = frame)
 
     # Hand landmarker
     landmarker.detect_async(mp_image, frame_timestamp_ms)
