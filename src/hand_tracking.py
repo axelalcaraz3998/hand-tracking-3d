@@ -7,6 +7,8 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+from render.render_landmarks import render_landmarks
+
 # Get model path relative to current directory
 dirname = os.path.dirname(__file__)
 model_path = os.path.join(dirname, "./models/hand_landmarker.task")
@@ -108,13 +110,16 @@ with HandLandmarker.create_from_options(options) as landmarker:
       # Write handedness
       cv.putText(frame, results["handedness"], (rect_right_bound, (rect_upper_bound - 10)), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-      for landmark in results["hand_landmarks"]:
-        # Convert normalized coordinates to pixels in frame
-        x_pos = int(landmark.x * width)
-        y_pos = int(landmark.y * height)
-        # Render landmarks in hand
-        cv.circle(frame, (x_pos, y_pos), 6, (0, 0, 0), -1)
-        cv.circle(frame, (x_pos, y_pos), 4, (255, 255, 255), -1)
+      # Render landmarks in hand
+      render_landmarks(frame, width, float, results["hand_landmarks"])
+
+      # for landmark in results["hand_landmarks"]:
+      #   # Convert normalized coordinates to pixels in frame
+      #   x_pos = int(landmark.x * width)
+      #   y_pos = int(landmark.y * height)
+      #   # Render landmarks in hand
+      #   cv.circle(frame, (x_pos, y_pos), 6, (0, 0, 0), -1)
+      #   cv.circle(frame, (x_pos, y_pos), 4, (255, 255, 255), -1)
 
     # Show image in a window
     cv.imshow("Webcam Capture", frame)      
