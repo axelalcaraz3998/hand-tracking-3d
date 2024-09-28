@@ -1,2 +1,13 @@
 venv_mediapipe
 __pycache__
+
+# Ignore calibration images but leave the example
+src/images/front_camera/capture/*.jpg
+src/images/front_camera/capture/!example.png
+src/images/front_camera/patterns/*.jpg
+src/images/front_camera/patterns/!example.png
+
+src/images/side_camera/capture/*.jpg
+src/images/side_camera/capture/!example.png
+src/images/side_camera/patterns/*.jpg
+src/images/side_camera/patterns/!example.png
