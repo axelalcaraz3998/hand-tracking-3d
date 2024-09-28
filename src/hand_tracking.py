@@ -49,10 +49,13 @@ options = HandLandmarkerOptions(
 with HandLandmarker.create_from_options(options) as landmarker:
   # Capture video from webcam using OpenCV
   capture = cv.VideoCapture(0, cv.CAP_DSHOW)
-  # Get with and height of frame
+  capture.set(cv.CAP_PROP_FRAME_WIDTH, 640)
+  capture.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
+
+  # Get width and height of frame
   width = capture.get(cv.CAP_PROP_FRAME_WIDTH)
   height = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
-  print(width, height)
+
   # Frame timestamp initialization
   frame_timestamp = 0
 
@@ -82,34 +85,18 @@ with HandLandmarker.create_from_options(options) as landmarker:
 
     # If a hand is detected render information into frame
     if results["hand_landmarks"] and results["handedness"]:
-      # # Gets position of middle finger tip
-      # rect_upper_bound = int(results["hand_landmarks"][12].y * height)
-      # # Gets position of wrist
-      # rect_lower_bound = int(results["hand_landmarks"][0].y * height)
-      # # Gets position of thumb tip
-      # rect_left_bound = int(results["hand_landmarks"][4].x * width)
-      # # Gets position of pinky tip
-      # rect_right_bound = int(results["hand_landmarks"][20].x * width)
-
-      # # Draw outer rectangle
-      # cv.rectangle(frame, (rect_left_bound, rect_upper_bound), (rect_right_bound, rect_lower_bound), (0, 255, 0), 2)
-
-      # # Write coordinates of center position
-      # coords = f"({(results["hand_landmarks"][0].x + results["hand_landmarks"][9].x) / 2}, {(results["hand_landmarks"][0].y + results["hand_landmarks"][9].y) / 2})"
-      # cv.putText(frame, coords, (0, 30), cv.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 1)
-
-      # # Write handedness
-      # cv.putText(frame, results["handedness"], (rect_right_bound, (rect_upper_bound - 10)), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-
       # Render landmarks in hand
       render_landmarks(blank_image, width, height, results["hand_landmarks"])
 
     # Show image in a window
-    cv.imshow("Webcam capture", frame)
-    cv.imshow("Hand tracking", blank_image)      
+    cv.imshow("Webcam Capture", frame)
+    cv.imshow("Hand Tracking", blank_image)
+
+    # Get pressed key
+    pressed_key = cv.waitKey(1) & 0xFF
 
     # Condition to exit loop
-    if cv.waitKey(1) == (ord('q') or ord('Q')):
+    if pressed_key == ord('q') or pressed_key == ord('Q'):
       break
 
   # Release capture and close windows
