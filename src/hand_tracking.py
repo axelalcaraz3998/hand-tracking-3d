@@ -28,7 +28,7 @@ results = {
 }
 
 # Callback function
-def result_callback(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
+def result_callback(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
   # If a hand is detected assing hand landmarker result to results dictionary
   if (len(result.handedness) > 0 and len(result.hand_landmarks) > 0):
     results["handedness"] = result.handedness[0][0].display_name
