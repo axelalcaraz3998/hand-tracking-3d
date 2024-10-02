@@ -1,5 +1,6 @@
 import os
 
+from dotenv import load_dotenv
 import numpy as np
 import cv2 as cv
 
@@ -8,6 +9,13 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from render.render_landmarks import render_landmarks
+
+# Load env variables
+load_dotenv()
+FRONT_CAMERA_ID = int(os.getenv("FRONT_CAMERA_ID"))
+SIDE_CAMERA_ID = int(os.getenv("SIDE_CAMERA_ID"))
+FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
+FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
 
 # Get model path relative to current directory
 dirname = os.path.dirname(__file__)
@@ -20,85 +28,129 @@ HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
 HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
 
-# Results dictionary
-results = {
+# Results dictionaries
+results_front = {
   "handedness": None,
   "hand_landmarks": None,
   "hand_orientation": None,
 }
 
-# Callback function
-def result_callback(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+results_side = {
+  "handedness": None,
+  "hand_landmarks": None,
+  "hand_orientation": None,
+}
+
+# Callback function for front camera
+def result_callback_front(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
   # If a hand is detected assing hand landmarker result to results dictionary
   if (len(result.handedness) > 0 and len(result.hand_landmarks) > 0):
-    results["handedness"] = result.handedness[0][0].display_name
-    results["hand_landmarks"] = result.hand_landmarks[0]
+    results_front["handedness"] = result.handedness[0][0].display_name
+    results_front["hand_landmarks"] = result.hand_landmarks[0]
   else:
-    results["handedness"] = None
-    results["hand_landmarks"] = None
-    results["hand_orientation"] = None
+    results_front["handedness"] = None
+    results_front["hand_landmarks"] = None
+    results_front["hand_orientation"] = None
 
-# Hand landmarker options
-options = HandLandmarkerOptions(
+# Callback function for side camera
+def result_callback_side(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+  # If a hand is detected assing hand landmarker result to results dictionary
+  if (len(result.handedness) > 0 and len(result.hand_landmarks) > 0):
+    results_side["handedness"] = result.handedness[0][0].display_name
+    results_side["hand_landmarks"] = result.hand_landmarks[0]
+  else:
+    results_side["handedness"] = None
+    results_side["hand_landmarks"] = None
+    results_side["hand_orientation"] = None
+
+# Hand landmarker options for front camera
+options_front = HandLandmarkerOptions(
   base_options = BaseOptions(model_asset_path = model_path),
   running_mode = VisionRunningMode.LIVE_STREAM,
-  result_callback = result_callback  
+  result_callback = result_callback_front
+)
+# Hand landmarker options for side camera
+options_side = HandLandmarkerOptions(
+  base_options = BaseOptions(model_asset_path = model_path),
+  running_mode = VisionRunningMode.LIVE_STREAM,
+  result_callback = result_callback_side
 )
 
-# Create hand landmarker instance
-with HandLandmarker.create_from_options(options) as landmarker:
-  # Capture video from webcam using OpenCV
-  capture = cv.VideoCapture(0, cv.CAP_DSHOW)
-  capture.set(cv.CAP_PROP_FRAME_WIDTH, 640)
-  capture.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
+# Create hand landmarker instance for front camera
+landmarker_front = HandLandmarker.create_from_options(options_front)
+# Create hand landmarker instance for side camera
+landmarker_side = HandLandmarker.create_from_options(options_side)
 
-  # Get width and height of frame
-  width = capture.get(cv.CAP_PROP_FRAME_WIDTH)
-  height = capture.get(cv.CAP_PROP_FRAME_HEIGHT)
+# Capture video from webcam using OpenCV
+capture_front = cv.VideoCapture(FRONT_CAMERA_ID, cv.CAP_DSHOW)
+capture_side = cv.VideoCapture(SIDE_CAMERA_ID, cv.CAP_DSHOW)
 
-  # Frame timestamp initialization
-  frame_timestamp = 0
+capture_front.set(cv.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+capture_front.set(cv.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
+capture_side.set(cv.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+capture_side.set(cv.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
 
-  # If camera is not detected, terminate program
-  if not capture.isOpened():
-    print("Can't open camera")
-    exit()
+# Get width and height of frame
+width = FRAME_WIDTH
+height = FRAME_HEIGHT
 
-  while True:
-    # Capture frame
-    ret, frame = capture.read()
-    frame_timestamp += 1
+# Frame timestamp initialization
+frame_timestamp_front = 0
+frame_timestamp_side= 0
 
-    # Empty canvas
-    blank_image = np.zeros((int(height), int(width), 3), np.uint8)
+# If either camera is not detected, terminate program
+if not capture_front.isOpened() or not capture_side.isOpened():
+  print("Can't open either of the cameras")
+  exit()
 
-    # If frame is not read correctly, exit loop
-    if not ret:
-      print("Can't receive frame, exiting loop")
-      break
+while True:
+  # Capture frame
+  ret_front, frame_front = capture_front.read()
+  ret_side, frame_side = capture_side.read()
 
-    # Convert frame to MediaPipe image object
-    mp_image = mp.Image(image_format = mp.ImageFormat.SRGB, data = frame)
+  frame_timestamp_front += 1
+  frame_timestamp_side += 1
 
-    # Hand landmarker detection
-    landmarker.detect_async(mp_image, frame_timestamp)
+  # Empty canvas
+  blank_image_front = np.zeros((int(height), int(width), 3), np.uint8)
+  blank_image_side = np.zeros((int(height), int(width), 3), np.uint8)
 
-    # If a hand is detected render information into frame
-    if results["hand_landmarks"] and results["handedness"]:
-      # Render landmarks in hand
-      render_landmarks(blank_image, width, height, results["hand_landmarks"])
+  # If frame is not read correctly, exit loop
+  if not ret_front or not ret_side:
+    print("Can't receive frame, exiting loop")
+    break
 
-    # Show image in a window
-    cv.imshow("Webcam Capture", frame)
-    cv.imshow("Hand Tracking", blank_image)
+  # Convert frame to MediaPipe image object
+  mp_image_front = mp.Image(image_format = mp.ImageFormat.SRGB, data = frame_front)
+  mp_image_side = mp.Image(image_format = mp.ImageFormat.SRGB, data = frame_side)
 
-    # Get pressed key
-    pressed_key = cv.waitKey(1) & 0xFF
+  # Hand landmarker detection
+  landmarker_front.detect_async(mp_image_front, frame_timestamp_front)
+  landmarker_side.detect_async(mp_image_side, frame_timestamp_side)
 
-    # Condition to exit loop
-    if pressed_key == ord('q') or pressed_key == ord('Q'):
-      break
+  # If a hand is detected render information into frame
+  if results_front["hand_landmarks"] and results_front["handedness"]:
+    # Render landmarks in hand
+    render_landmarks(blank_image_front, width, height, results_front["hand_landmarks"])
+  
+  if results_side["hand_landmarks"] and results_side["handedness"]:
+    # Render landmarks in hand
+    render_landmarks(blank_image_side, width, height, results_side["hand_landmarks"])
 
-  # Release capture and close windows
-  capture.release()
-  cv.destroyAllWindows()
+  # Show image in a window
+  cv.imshow("Front Webcam Capture", frame_front)
+  cv.imshow("Side Webcam Capture", frame_side)
+  cv.imshow("Hand Tracking Front Camera", blank_image_front)
+  cv.imshow("Hand Tracking Side Camera", blank_image_side)
+
+  # Get pressed key
+  pressed_key = cv.waitKey(1) & 0xFF
+
+  # Condition to exit loop
+  if pressed_key == ord('q') or pressed_key == ord('Q'):
+    break
+
+# Release capture and close windows
+capture_front.release()
+capture_side.release()
+cv.destroyAllWindows()
