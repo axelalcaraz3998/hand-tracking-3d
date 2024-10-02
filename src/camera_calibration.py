@@ -1,6 +1,7 @@
 import os
 import glob
 
+from dotenv import load_dotenv
 import numpy as np
 import cv2 as cv
 
@@ -10,19 +11,42 @@ front_camera_path = os.path.join(dirname, "images/front_camera")
 side_camera_path = os.path.join(dirname, "images/side_camera")
 synced_camera_path = os.path.join(dirname, "images/synced")
 
-# Camera matrices and distortion coefficients
-mtx_0 = None
-mtx_1 = None
-dist_0 = None
-dist_1 = None
-rotation_matrix = None
-translation_vector = None
+# Get relative path to camera parameters folder
+camera_parameters_path = os.path.join(dirname, "camera_parameters")
 
-def capture_test_patterns(camera_id: int = 0, camera_type: str = "front"):
+# Load env variables
+load_dotenv()
+FRONT_CAMERA_ID = int(os.getenv("FRONT_CAMERA_ID"))
+SIDE_CAMERA_ID = int(os.getenv("SIDE_CAMERA_ID"))
+FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
+FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
+CHESSBOARD_ROWS = int(os.getenv("CHESSBOARD_ROWS"))
+CHESSBOARD_COLUMNS = int(os.getenv("CHESSBOARD_COLUMNS"))
+CHESSBOARD_SQUARE_SIZE = float(os.getenv("CHESSBOARD_SQUARE_SIZE"))
+
+# Camera matrices and distortion coefficients
+mtx_front = None
+mtx_side = None
+dist_front = None
+dist_side = None
+
+# Rotation matrix and translation vector
+R = None
+T = None
+
+def capture_test_patterns(camera_type: str = "front"):
   # Capture video from webcam using OpenCV
-  capture = cv.VideoCapture(camera_id, cv.CAP_DSHOW)
-  capture.set(cv.CAP_PROP_FRAME_WIDTH, 640)
-  capture.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
+  if camera_type.lower() == "front":
+    capture = cv.VideoCapture(FRONT_CAMERA_ID, cv.CAP_DSHOW)
+  elif camera_type.lower() == "side":
+    capture = cv.VideoCapture(SIDE_CAMERA_ID, cv.CAP_DSHOW)    
+  else:
+    print("No such camera position")
+    exit()
+
+  # Set frame width and height
+  capture.set(cv.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+  capture.set(cv.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
 
   # Initialize frame count
   frame_count = 1
@@ -52,7 +76,7 @@ def capture_test_patterns(camera_id: int = 0, camera_type: str = "front"):
       break
     # Save frame when the SPACE key is pressed    
     elif pressed_key == 32:
-      if camera_type == "front":
+      if camera_type.lower() == "front":
         img_name = f"{front_camera_path}/capture/frame_{frame_count}.jpg"
       else:
         img_name = f"{side_camera_path}/capture/frame_{frame_count}.jpg"
@@ -65,22 +89,26 @@ def capture_test_patterns(camera_id: int = 0, camera_type: str = "front"):
   cv.destroyAllWindows()
 
   # Calibrate camera
-  if camera_type == "front":
-    mtx_0, dist_0 = calibrate_single_camera(camera_type)
+  if camera_type.lower() == "front":
+    mtx_front, dist_front = calibrate_single_camera(camera_type)
+    np.save(f"{camera_parameters_path}/mtx_front.npy", mtx_front)
+    np.save(f"{camera_parameters_path}/dist_front.npy", dist_front)
   else:
-    mtx_1, dist_1 = calibrate_single_camera(camera_type)
+    mtx_side, dist_side = calibrate_single_camera(camera_type)
+    np.save(f"{camera_parameters_path}/mtx_front.npy", mtx_side)
+    np.save(f"{camera_parameters_path}/dist_front.npy", dist_side)
 
 def calibrate_single_camera(camera_type: str = "front"):
   # Termination criteria
   criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-  rows = 4 # Number of checkboard row corners
-  columns = 7 # Number of checkboard row corners
-  world_scaling = 1 # Real world square size (Or not)
+  rows = CHESSBOARD_ROWS # Number of checkboard row corners
+  columns = CHESSBOARD_COLUMNS # Number of checkboard row corners
+  world_scaling = CHESSBOARD_SQUARE_SIZE # Real world square size
 
   # Prepare object points
   obj_point = np.zeros((rows * columns, 3), np.float32)
-  obj_point[:,:2] = np.mgrid[0:rows, 0:columns].T.reshape(-1, 2)
+  obj_point[:, :2] = np.mgrid[0:rows, 0:columns].T.reshape(-1, 2)
   obj_point = world_scaling * obj_point
 
   # Arrays to store object points and image points
@@ -88,12 +116,12 @@ def calibrate_single_camera(camera_type: str = "front"):
   img_points = [] # 2D points in image plane
 
   # Load images
-  if camera_type == "front":
+  if camera_type.lower() == "front":
     images_path = f"{front_camera_path}/capture/*.jpg"
-    images = sorted(glob.glob(images_path))
   else:
     images_path = f"{side_camera_path}/capture/*.jpg"
-    images = sorted(glob.glob(images_path))
+
+  images = sorted(glob.glob(images_path))
 
   # Initialize image count
   img_count = 1
@@ -108,15 +136,15 @@ def calibrate_single_camera(camera_type: str = "front"):
     img = cv.imread(file_name)
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-    # Find chess board corners
+    # Find chessboard corners
     ret, corners = cv.findChessboardCorners(gray, (rows, columns), None)
 
     # If found, append object point and image point
     if ret == True:
-      obj_points.append(obj_point)
-      
       # Refine checkboard coordinates
       corners2 = cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+
+      obj_points.append(obj_point)
       img_points.append(corners2)
 
       # Draw and display corners
@@ -138,46 +166,47 @@ def calibrate_single_camera(camera_type: str = "front"):
 
   # Find calibration parameters
   ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
-  # print("RMSE: ", ret)
-  # print("Camera matrix:\n", mtx)
-  # print("Distortion coefficients: ", dist)
-  # print("Rs:\n", rvecs)
-  # print("Ts:\n", tvecs)
+  print("RMSE: ", ret)
+  print("Camera matrix:\n", mtx)
+  print("Distortion coefficients: ", dist)
+  print("Rs:\n", rvecs)
+  print("Ts:\n", tvecs)
   
   return mtx, dist
 
 def capture_synced_test_patterns():
   # Capture video from webcams using OpenCV
-  cam_0 = cv.VideoCapture(0, cv.CAP_DSHOW)
-  cam_1 = cv.VideoCapture(1, cv.CAP_DSHOW)
+  front_cam = cv.VideoCapture(FRONT_CAMERA_ID, cv.CAP_DSHOW)
+  side_cam = cv.VideoCapture(SIDE_CAMERA_ID, cv.CAP_DSHOW)
 
-  cam_0.set(cv.CAP_PROP_FRAME_WIDTH, 640)
-  cam_0.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
-  cam_1.set(cv.CAP_PROP_FRAME_WIDTH, 640)
-  cam_1.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
+  # Set frames resolution
+  front_cam.set(cv.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+  front_cam.set(cv.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
+  side_cam.set(cv.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
+  side_cam.set(cv.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
 
   # Initialize image_count
-  cam_0_count = 1
-  cam_1_count = 2
+  front_cam_count = 1
+  side_cam_count = 2
 
   # If either of the cameras is not detected, terminate program
-  if not cam_0.isOpened() or not cam_1.isOpened():
+  if not front_cam.isOpened() or not side_cam.isOpened():
     print("Can't open either of the two cameras")
     exit()
 
   while True:
     # Capture frame
-    ret_0, frame_0 = cam_0.read()
-    ret_1, frame_1 = cam_1.read()
+    ret_front, frame_front = front_cam.read()
+    ret_side, frame_side = side_cam.read()
 
     # If either frame is not read correctly, exit loop
-    if not ret_0 or not ret_1:
+    if not ret_front or not ret_side:
       print("Can't receive frame, exiting loop")
       break
 
     # Show image in a window
-    cv.imshow("Webcam 0 Capture", frame_0)
-    cv.imshow("Webcam 1 Capture", frame_1)
+    cv.imshow("Front Webcam Capture", frame_front)
+    cv.imshow("Side Webcam Capture", frame_side)
 
     # Get pressed key
     pressed_key = cv.waitKey(1) & 0xFF
@@ -187,28 +216,32 @@ def capture_synced_test_patterns():
       break
     # Save frame when the SPACE key is pressed
     elif pressed_key == 32:
-      cam_0_img_name = f"{synced_camera_path}/capture/frame_{cam_0_count}.jpg"
-      cam_1_img_name = f"{synced_camera_path}/capture/frame_{cam_1_count}.jpg"
-      cv.imwrite(cam_0_img_name, frame_0)
-      cv.imwrite(cam_1_img_name, frame_1)
-      cam_0_count += 2
-      cam_1_count += 2
+      front_cam_img_name = f"{synced_camera_path}/capture/frame_{front_cam_count}.jpg"
+      side_cam_img_name = f"{synced_camera_path}/capture/frame_{side_cam_count}.jpg"
+
+      cv.imwrite(front_cam_img_name, frame_front)
+      cv.imwrite(side_cam_img_name, frame_side)
+
+      front_cam_count += 2
+      side_cam_count += 2
 
   # Release capture and close windows
-  cam_0.release()
-  cam_1.release()
+  front_cam.release()
+  side_cam.release()
   cv.destroyAllWindows()
 
   # Calibrate cameras
-  rotation_matrix, translation_vector = calibrate_synced_cameras()
+  R, T = calibrate_synced_cameras()
+  np.save(f"{camera_parameters_path}/R.npy", mtx_side)
+  np.save(f"{camera_parameters_path}/T.npy", dist_side)  
 
 def calibrate_synced_cameras():
   # Termination criteria
-  criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
+  criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.001)
 
-  rows = 4 # Number of checkboard row corners
-  columns = 7 # Number of checkboard row corners
-  world_scaling = 1 # Real world square size (Or not)
+  rows = CHESSBOARD_ROWS # Number of checkboard row corners
+  columns = CHESSBOARD_COLUMNS # Number of checkboard row corners
+  world_scaling = CHESSBOARD_SQUARE_SIZE # Real world square size (Or not)
 
   # Prepare object points
   obj_point = np.zeros((rows * columns, 3), np.float32)
@@ -217,8 +250,8 @@ def calibrate_synced_cameras():
 
   # Arrays to store object points and image points
   obj_points = [] # 3D points in real world space
-  img_points_cam_0 = [] # 2D points in image plane
-  img_points_cam_1 = [] # 2D points in image plane
+  img_points_front_cam = [] # 2D points in image plane
+  img_points_side_cam = [] # 2D points in image plane
 
   # Load images
   images_path = f"{synced_camera_path}/capture/*.jpg"
@@ -228,8 +261,8 @@ def calibrate_synced_cameras():
   img_count = 1
 
   # Images list
-  cam_0_images = []
-  cam_1_images = []
+  front_cam_images = []
+  side_cam_images = []
 
   # Iterate through each image in directory
   for file_name in images:
@@ -240,60 +273,61 @@ def calibrate_synced_cameras():
     # Add images to its respective list
     img = cv.imread(file_name, 1)
     if img_count % 2 != 0:
-      cam_0_images.append(img)
+      front_cam_images.append(img)
     else:
-      cam_1_images.append(img)
+      side_cam_images.append(img)
 
     img_count += 1
 
   # Initialize camera image count
-  cam_0_count = 1
-  cam_1_count = 2
+  front_cam_count = 1
+  side_cam_count = 2
 
   # Iterate through each list
-  for cam_0_img, cam_1_img in zip(cam_0_images, cam_1_images):
+  for frame_front, frame_side in zip(front_cam_images, side_cam_images):
     # Read image and convert it to gray scale
-    gray_0 = cv.cvtColor(cam_0_img, cv.COLOR_BGR2GRAY)
-    gray_1 = cv.cvtColor(cam_1_img, cv.COLOR_BGR2GRAY)
+    gray_front = cv.cvtColor(frame_front, cv.COLOR_BGR2GRAY)
+    gray_side = cv.cvtColor(frame_side, cv.COLOR_BGR2GRAY)
 
     # Find chess board corners
-    ret_0, corners_0 = cv.findChessboardCorners(gray_0, (rows, columns), None)
-    ret_1, corners_1 = cv.findChessboardCorners(gray_1, (rows, columns), None)
+    ret_front, corners_front = cv.findChessboardCorners(gray_front, (rows, columns), None)
+    ret_side, corners_side = cv.findChessboardCorners(gray_side, (rows, columns), None)
 
     # If found, append object point and image point
-    if ret_0 == True and ret_1 == True:
-      obj_points.append(obj_point)
-      
+    if ret_front == True and ret_side == True:
       # Refine checkboard coordinates
-      corners0 = cv.cornerSubPix(gray_0, corners_0, (11, 11), (-1, -1), criteria)
-      corners1 = cv.cornerSubPix(gray_1, corners_1, (11, 11), (-1, -1), criteria)
-      img_points_cam_0.append(corners0)
-      img_points_cam_1.append(corners1)
+      cornersFront = cv.cornerSubPix(gray_front, corners_front, (11, 11), (-1, -1), criteria)
+      cornersSide = cv.cornerSubPix(gray_side, corners_side, (11, 11), (-1, -1), criteria)
+
+      obj_points.append(obj_point)
+      img_points_front_cam.append(cornersFront)
+      img_points_side_cam.append(cornersSide)
 
       # Draw and display corners
-      cv.drawChessboardCorners(cam_0_img, (rows, columns), corners0, ret_0)
-      cv.imshow("Checkboard Pattern Cam 0", cam_0_img)
+      cv.drawChessboardCorners(frame_front, (rows, columns), cornersFront, ret_front)
+      cv.imshow("Front Webcam Checkboard Pattern", frame_front)
     
-      cv.drawChessboardCorners(cam_1_img, (rows, columns), corners1, ret_1)
-      cv.imshow("Checkboard Pattern Cam 1", cam_1_img)
+      cv.drawChessboardCorners(frame_side, (rows, columns), cornersSide, ret_side)
+      cv.imshow("Side Webcam Checkboard Pattern", frame_side)
 
       # Write pattern image
-      cam_0_img_name = f"{synced_camera_path}/calibration/frame_{cam_0_count}.jpg"
-      cv.imwrite(cam_0_img_name, cam_0_img)
-      cam_1_img_name = f"{synced_camera_path}/calibration/frame_{cam_1_count}.jpg"
-      cv.imwrite(cam_1_img_name, cam_1_img)
+      front_cam_img_name = f"{synced_camera_path}/calibration/frame_{front_cam_count}.jpg"
+      cv.imwrite(front_cam_img_name, frame_front)
+      side_cam_img_name = f"{synced_camera_path}/calibration/frame_{side_cam_count}.jpg"
+      cv.imwrite(side_cam_img_name, frame_side)
 
-      cam_0_count += 2
-      cam_1_count += 2
+      front_cam_count += 2
+      side_cam_count += 2
 
-      cv.waitKey(500)
-    else:
-      print("No image found")
+      cv.waitKey(1000)
+
+      # Find projection matrices
+      find_projection_matrices()
 
   cv.destroyAllWindows()
 
   # Find stereo calibration parameters
-  ret, CM1, dist1, CM2, dist2, R, T, E, F = cv.stereoCalibrate(obj_points, img_points_cam_0, img_points_cam_1, mtx_0, dist_0, mtx_1, dist_1, (640, 480), criteria = criteria, flags = cv.CALIB_FIX_INTRINSIC)
+  ret, CM1, dist1, CM2, dist2, R, T, E, F = cv.stereoCalibrate(obj_points, img_points_front_cam, img_points_side_cam, mtx_front, dist_front, mtx_side, dist_side, (int(FRAME_WIDTH), int(FRAME_HEIGHT)), criteria, cv.CALIB_FIX_INTRINSIC)
   print("RMSE: ", ret)
   print("Camera matrix 1:\n", CM1)
   print("Distortion coefficients 1: ", dist1)
@@ -306,20 +340,23 @@ def calibrate_synced_cameras():
 
   return R, T
 
-mtx_0, dist_0 = calibrate_single_camera("front")
-mtx_1, dist_1 = calibrate_single_camera("side")
+def find_projection_matrices():
+  # RT matrix for Camera 1
+  RT1 = np.concatenate([np.eye(3), [[0], [0], [0]]], axis = -1)
+  # Projection matrix for camera 1
+  P1 = mtx_front @ RT1
 
-rotation_matrix, translation_vector = calibrate_synced_cameras()
+  # RT matrix for Camera 2
+  RT2 = np.concatenate([R, T], axis = -1)
+  # Projection matrix for camera 2
+  P2 = mtx_side @ RT2
 
-# RT matrix for Camera 1
-RT1 = np.concatenate([np.eye(3), [[0], [0], [0]]], axis = -1)
-# Projection matrix for camera 1
-P1 = mtx_0 @ RT1
+  np.save(f"{camera_parameters_path}/P1.npy", dist_side)  
+  np.save(f"{camera_parameters_path}/P2.npy", dist_side)  
 
-# RT matrix for Camera 2
-RT2 = np.concatenate([rotation_matrix, translation_vector], axis = -1)
-# Projection matrix for camera 2
-P2 = mtx_1 @ RT2
+  print("P1:\n", P1)
+  print("P2:\n", P2)
 
-print("P1: ", P1)
-print("P2: ", P2)
+capture_test_patterns("front")
+capture_test_patterns("side")
+capture_synced_test_patterns()
