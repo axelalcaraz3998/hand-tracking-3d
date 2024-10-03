@@ -16,6 +16,9 @@ FRONT_CAMERA_ID = int(os.getenv("FRONT_CAMERA_ID"))
 SIDE_CAMERA_ID = int(os.getenv("SIDE_CAMERA_ID"))
 FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
 FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
+MIN_HAND_DETECTION_CONFIDENCE = float(os.getenv("MIN_HAND_DETECTION_CONFIDENCE"))
+MIN_HAND_PRESENCE_CONFIDENCE = float(os.getenv("MIN_HAND_PRESENCE_CONFIDENCE"))
+MIN_TRACKING_CONFIDENCE = float(os.getenv("MIN_TRACKING_CONFIDENCE"))
 
 # Get model path relative to current directory
 dirname = os.path.dirname(__file__)
@@ -67,12 +70,21 @@ def result_callback_side(result: HandLandmarkerResult, output_image: mp.Image, t
 options_front = HandLandmarkerOptions(
   base_options = BaseOptions(model_asset_path = model_path),
   running_mode = VisionRunningMode.LIVE_STREAM,
+  num_hands = 1,
+  min_hand_detection_confidence = MIN_HAND_DETECTION_CONFIDENCE,
+  min_hand_presence_confidence = MIN_HAND_PRESENCE_CONFIDENCE,
+  min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
   result_callback = result_callback_front
 )
+
 # Hand landmarker options for side camera
 options_side = HandLandmarkerOptions(
   base_options = BaseOptions(model_asset_path = model_path),
   running_mode = VisionRunningMode.LIVE_STREAM,
+  num_hands = 1,
+  min_hand_detection_confidence = MIN_HAND_DETECTION_CONFIDENCE,
+  min_hand_presence_confidence = MIN_HAND_PRESENCE_CONFIDENCE,
+  min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
   result_callback = result_callback_side
 )
 
