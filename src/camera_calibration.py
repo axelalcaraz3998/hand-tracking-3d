@@ -95,8 +95,8 @@ def capture_test_patterns(camera_type: str = "front"):
     np.save(f"{camera_parameters_path}/dist_front.npy", dist_front)
   else:
     mtx_side, dist_side = calibrate_single_camera(camera_type)
-    np.save(f"{camera_parameters_path}/mtx_front.npy", mtx_side)
-    np.save(f"{camera_parameters_path}/dist_front.npy", dist_side)
+    np.save(f"{camera_parameters_path}/mtx_side.npy", mtx_side)
+    np.save(f"{camera_parameters_path}/dist_side.npy", dist_side)
 
 def calibrate_single_camera(camera_type: str = "front"):
   # Termination criteria
@@ -232,8 +232,8 @@ def capture_synced_test_patterns():
 
   # Calibrate cameras
   R, T = calibrate_synced_cameras()
-  np.save(f"{camera_parameters_path}/R.npy", mtx_side)
-  np.save(f"{camera_parameters_path}/T.npy", dist_side)  
+  np.save(f"{camera_parameters_path}/R.npy", R)
+  np.save(f"{camera_parameters_path}/T.npy", T)  
 
 def calibrate_synced_cameras():
   # Termination criteria
@@ -351,8 +351,8 @@ def find_projection_matrices():
   # Projection matrix for camera 2
   P2 = mtx_side @ RT2
 
-  np.save(f"{camera_parameters_path}/P1.npy", dist_side)  
-  np.save(f"{camera_parameters_path}/P2.npy", dist_side)  
+  np.save(f"{camera_parameters_path}/P1.npy", P1)  
+  np.save(f"{camera_parameters_path}/P2.npy", P2)  
 
   print("P1:\n", P1)
   print("P2:\n", P2)
