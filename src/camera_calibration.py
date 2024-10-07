@@ -165,7 +165,7 @@ def calibrate_single_camera(camera_type: str = "front"):
   cv.destroyAllWindows()
 
   # Find calibration parameters
-  ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
+  ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(obj_points, img_points, (int(FRAME_WIDTH), int(FRAME_HEIGHT)), None, None)
   print("RMSE: ", ret)
   print("Camera matrix:\n", mtx)
   print("Distortion coefficients: ", dist)
@@ -234,6 +234,9 @@ def capture_synced_test_patterns():
   R, T = calibrate_synced_cameras()
   np.save(f"{camera_parameters_path}/R.npy", R)
   np.save(f"{camera_parameters_path}/T.npy", T)  
+
+  # Obtain projection matrices
+  find_projection_matrices()
 
 def calibrate_synced_cameras():
   # Termination criteria
@@ -319,10 +322,7 @@ def calibrate_synced_cameras():
       front_cam_count += 2
       side_cam_count += 2
 
-      cv.waitKey(1000)
-
-      # Find projection matrices
-      find_projection_matrices()
+      cv.waitKey(500)
 
   cv.destroyAllWindows()
 
@@ -357,6 +357,11 @@ def find_projection_matrices():
   print("P1:\n", P1)
   print("P2:\n", P2)
 
-capture_test_patterns("front")
-capture_test_patterns("side")
-capture_synced_test_patterns()
+# capture_test_patterns("front")
+# capture_test_patterns("side")
+# capture_synced_test_patterns()
+
+mtx_front, dist_front = calibrate_single_camera("front")
+mtx_side, dist_side = calibrate_single_camera("side")
+R, T = calibrate_synced_cameras()
+find_projection_matrices()
