@@ -1,6 +1,7 @@
 import os
 
 from dotenv import load_dotenv
+import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 
@@ -9,6 +10,8 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from render.render_landmarks import render_landmarks
+from render.render_hand_3d import plot_hand
+from utils.dlt import DLT
 
 # Load env variables
 load_dotenv()
@@ -35,13 +38,11 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 results_front = {
   "handedness": None,
   "hand_landmarks": None,
-  "hand_orientation": None,
 }
 
 results_side = {
   "handedness": None,
   "hand_landmarks": None,
-  "hand_orientation": None,
 }
 
 # Callback function for front camera
@@ -53,7 +54,6 @@ def result_callback_front(result: HandLandmarkerResult, output_image: mp.Image, 
   else:
     results_front["handedness"] = None
     results_front["hand_landmarks"] = None
-    results_front["hand_orientation"] = None
 
 # Callback function for side camera
 def result_callback_side(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
@@ -115,6 +115,14 @@ if not capture_front.isOpened() or not capture_side.isOpened():
   print("Can't open either of the cameras")
   exit()
 
+# Last valid 3D estimation
+last_3d_estimation = None
+
+# Create hand plots
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection = "3d")
+# plt.show()
+
 while True:
   # Capture frame
   ret_front, frame_front = capture_front.read()
@@ -141,19 +149,55 @@ while True:
   landmarker_side.detect_async(mp_image_side, frame_timestamp_side)
 
   # If a hand is detected render information into frame
-  if results_front["hand_landmarks"] and results_front["handedness"]:
+  if results_front["hand_landmarks"]:
     # Render landmarks in hand
     render_landmarks(blank_image_front, width, height, results_front["hand_landmarks"])
   
-  if results_side["hand_landmarks"] and results_side["handedness"]:
+  if results_side["hand_landmarks"]:
     # Render landmarks in hand
     render_landmarks(blank_image_side, width, height, results_side["hand_landmarks"])
 
+  # Keypoints
+  keypoints_front = []
+  keypoints_side = []
+  keypoints_3d = []
+  world_3d = []
+
+  # Get 3D estimation of keypoints
+  if results_front["hand_landmarks"] and results_side["hand_landmarks"]:
+    for landmark_front in results_front["hand_landmarks"]:
+      point_x = int(round(FRAME_WIDTH * landmark_front.x))
+      point_y = int(round(FRAME_HEIGHT * landmark_front.y))
+      keypoints = [point_x, point_y]
+      keypoints_front.append(keypoints)
+
+    for landmark_side in results_side["hand_landmarks"]:
+      point_x = int(round(FRAME_WIDTH * landmark_side.x))
+      point_y = int(round(FRAME_HEIGHT * landmark_side.y))
+      keypoints = [point_x, point_y]
+      keypoints_side.append(keypoints)
+
+    for uv1, uv2 in zip(keypoints_front, keypoints_side):
+      keypoints = DLT(uv1, uv2)
+      keypoints_3d.append(keypoints)
+
+    keypoints_3d = np.array(keypoints_3d).reshape((21, 3))
+    world_3d.append(keypoints_3d)
+    last_3d_estimation = world_3d
+  else:
+    world_3d = last_3d_estimation
+
   # Show image in a window
-  cv.imshow("Front Webcam Capture", frame_front)
-  cv.imshow("Side Webcam Capture", frame_side)
+  # cv.imshow("Front Webcam Capture", frame_front)
+  # cv.imshow("Side Webcam Capture", frame_side)
   cv.imshow("Hand Tracking Front Camera", blank_image_front)
   cv.imshow("Hand Tracking Side Camera", blank_image_side)
+
+  # Plot hand in 3D space
+  if last_3d_estimation:
+    # plot_hand(world_3d, ax)
+    if frame_timestamp_front % 10 == 0:
+      print(world_3d)
 
   # Get pressed key
   pressed_key = cv.waitKey(1) & 0xFF
