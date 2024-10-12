@@ -1,7 +1,7 @@
 import os
 import glob
 
-from dotenv import load_dotenv
+import dotenv
 import numpy as np
 import cv2 as cv
 
@@ -15,9 +15,11 @@ synced_camera_path = os.path.join(dirname, "images/synced")
 camera_parameters_path = os.path.join(dirname, "camera_parameters")
 
 # Load env variables
-load_dotenv()
-FRONT_CAMERA_ID = int(os.getenv("FRONT_CAMERA_ID"))
-SIDE_CAMERA_ID = int(os.getenv("SIDE_CAMERA_ID"))
+dotenv_file = dotenv.find_dotenv()
+dotenv.load_dotenv(dotenv_file)
+
+CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
+CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
 FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
 FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
 CHESSBOARD_ROWS = int(os.getenv("CHESSBOARD_ROWS"))
@@ -37,9 +39,9 @@ T = None
 def capture_test_patterns(camera_type: str = "front"):
   # Capture video from webcam using OpenCV
   if camera_type.lower() == "front":
-    capture = cv.VideoCapture(FRONT_CAMERA_ID, cv.CAP_DSHOW)
+    capture = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)
   elif camera_type.lower() == "side":
-    capture = cv.VideoCapture(SIDE_CAMERA_ID, cv.CAP_DSHOW)    
+    capture = cv.VideoCapture(CAMERA_1_ID, cv.CAP_DSHOW)    
   else:
     print("No such camera position")
     exit()
@@ -176,8 +178,8 @@ def calibrate_single_camera(camera_type: str = "front"):
 
 def capture_synced_test_patterns():
   # Capture video from webcams using OpenCV
-  front_cam = cv.VideoCapture(FRONT_CAMERA_ID, cv.CAP_DSHOW)
-  side_cam = cv.VideoCapture(SIDE_CAMERA_ID, cv.CAP_DSHOW)
+  front_cam = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)
+  side_cam = cv.VideoCapture(CAMERA_1_ID, cv.CAP_DSHOW)
 
   # Set frames resolution
   front_cam.set(cv.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
