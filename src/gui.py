@@ -3,6 +3,7 @@ import dotenv
 import tkinter as tk
 from tkinter import messagebox
 
+from test_cameras import test_cameras
 from utils.validate_number import validate_number
 
 dotenv_file = dotenv.find_dotenv()
@@ -18,10 +19,6 @@ class GUI():
 
     self.root.protocol(name="WM_DELETE_WINDOW", func=self.on_close)
     self.root.mainloop()
-
-  def on_close(self):
-    if messagebox.askyesno(title="Quit?", message="Do you really want to quit?"):
-      self.root.destroy()
 
   def main_menu_view(self):
     # Destroy all widgets
@@ -39,12 +36,16 @@ class GUI():
     self.button_camera_calibration = tk.Button(master=self.root, text="Camera Calibration", font=("TkDefaultFont", 12), image=self.pixel_camera_calibration, width=160, height=40, compound="c")
     self.button_camera_calibration.pack(pady=(32, 0))
 
+    self.pixel_test_cameras = tk.PhotoImage(width=1, height=1)
+    self.button_test_cameras = tk.Button(master=self.root, text="Test Cameras", font=("TkDefaultFont", 12), image=self.pixel_test_cameras, width=160, height=40, compound="c", command=test_cameras)
+    self.button_test_cameras.pack(pady=(32, 0))
+
     self.pixel_settings = tk.PhotoImage(width=1, height=1)
     self.button_settings = tk.Button(master=self.root, text="Settings", font=("TkDefaultFont", 12), image=self.pixel_settings, width=160, height=40, compound="c", command=self.settings_view)
     self.button_settings.pack(pady=(32, 0))
 
     self.pixel_quit = tk.PhotoImage(width=1, height=1)
-    self.button_quit = tk.Button(master=self.root, text="Quit", font=("TkDefaultFont", 12), image=self.pixel_settings, width=160, height=40, compound="c", command=self.on_close)
+    self.button_quit = tk.Button(master=self.root, text="Quit", font=("TkDefaultFont", 12), image=self.pixel_quit, width=160, height=40, compound="c", command=self.on_close)
     self.button_quit.pack(pady=(32, 42))
 
   def settings_view(self):
@@ -129,10 +130,14 @@ class GUI():
     self.button_save.pack(pady=(42, 0))
 
     self.pixel_back = tk.PhotoImage(width=1, height=1)
-    self.button_back = tk.Button(master=self.root, text="Back", font=("TkDefaultFont", 12), image=self.pixel_save, width=160, height=40, compound="c", command=self.main_menu_view)
+    self.button_back = tk.Button(master=self.root, text="Back", font=("TkDefaultFont", 12), image=self.pixel_back, width=160, height=40, compound="c", command=self.main_menu_view)
     self.button_back.pack(pady=(32, 42))
 
     self.load_settings()
+
+  def on_close(self):
+    if messagebox.askyesno(title="Quit?", message="Do you really want to quit?"):
+      self.root.destroy()
 
   def load_settings(self):
     self.camera_0_entry.insert(0, os.environ["CAMERA_0_ID"])
