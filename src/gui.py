@@ -1,11 +1,14 @@
 import os
+
 import dotenv
 import tkinter as tk
 from tkinter import messagebox
 
+from camera_calibration_v2 import camera_calibration
 from test_cameras import test_cameras
 from utils.validate_number import validate_number
 
+# Load .env file
 dotenv_file = dotenv.find_dotenv()
 dotenv.load_dotenv(dotenv_file)
 
@@ -33,7 +36,7 @@ class GUI():
     self.button_hand_tracking.pack(pady=(42, 0))
 
     self.pixel_camera_calibration = tk.PhotoImage(width=1, height=1)
-    self.button_camera_calibration = tk.Button(master=self.root, text="Camera Calibration", font=("TkDefaultFont", 12), image=self.pixel_camera_calibration, width=160, height=40, compound="c")
+    self.button_camera_calibration = tk.Button(master=self.root, text="Camera Calibration", font=("TkDefaultFont", 12), image=self.pixel_camera_calibration, width=160, height=40, compound="c", command=camera_calibration)
     self.button_camera_calibration.pack(pady=(32, 0))
 
     self.pixel_test_cameras = tk.PhotoImage(width=1, height=1)
@@ -186,7 +189,7 @@ class GUI():
     for key, value in settings_state.items():
       type = "float"
       in_range = False
-      if key in ["CAMERA_0_ID", "CAMERA_1_ID", "FRAME_WIDTH", "FRAME_HEIGHT", "CHESSBOARD_ROWS", "CHESSBOARD_COLUMNS"]:
+      if key in ["CAMERA_0_ID", "CAMERA_1_ID", "FRAME_WIDTH", "FRAME_HEIGHT", "CHESSBOARD_ROWS", "CHESSBOARD_COLUMNS", "CHESSBOARD_SQUARE_SIZE"]:
         type = "int"
       if key in ["MIN_HAND_DETECTION_CONFIDENCE", "MIN_HAND_PRESENCE_CONFIDENCE", "MIN_TRACKING_CONFIDENCE"]:
         in_range = True
