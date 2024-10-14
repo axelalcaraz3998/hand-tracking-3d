@@ -1,5 +1,4 @@
-venv_mediapipe
 __pycache__
 
-# Ignore camera parameters
-src/camera_parameters
+venv_mediapipe/
+src/camera_parameters/
