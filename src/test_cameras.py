@@ -1,21 +1,21 @@
 import os
 
-import numpy as np
-import cv2 as cv
 import dotenv
+import cv2 as cv
 
-# Load env variables
+# Load .env file
 dotenv_file = dotenv.find_dotenv()
 dotenv.load_dotenv(dotenv_file)
 
+# Load environment variables
 CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
 CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
 FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
 FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
 
-is_currently_active = True
-
 def test_cameras():
+  print("========== Running Test Cameras ==========")
+  
   # Set webcam capture
   capture_0 = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)
   capture_1 = cv.VideoCapture(CAMERA_1_ID, cv.CAP_DSHOW)
@@ -27,18 +27,27 @@ def test_cameras():
   capture_1.set(cv.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
 
   # If either of the cameras is not detected, terminate program
-  if not capture_0.isOpened() or not capture_1.isOpened():
-    print("Can't open either of the cameras")
+  if not capture_0.isOpened():
+    print("Can't open camera 0")
     exit()
+  if not capture_1.isOpened():
+    print("Can't open camera 1")
+    exit()
+
+  print("Camera 0 is working")
+  print("Camera 1 is working")    
 
   while True:
     # Capture frame
     ret_0, frame_0 = capture_0.read()
     ret_1, frame_1 = capture_1.read()
 
-    # If frame is not read correctly, terminate program
-    if not ret_0 or not ret_1:
-      print("Can't receive frame")
+    # If a frame is not read correctly, terminate program
+    if not ret_0:
+      print("Can't receive frame from camera 0")
+      break
+    if not ret_1:
+      print("Can't receive frame from camera 1")
       break
       
     cv.imshow("Camera 0", frame_0)
@@ -49,9 +58,11 @@ def test_cameras():
 
     # Condition to exit loop
     if pressed_key == ord('q') or pressed_key == ord('Q'):
-      break    
+      break
 
   # Release captures and destroy windows
   capture_0.release()
   capture_1.release()
   cv.destroyAllWindows()
+
+  print("========== Exiting Test Cameras ==========")
