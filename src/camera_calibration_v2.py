@@ -17,6 +17,10 @@ CHESSBOARD_ROWS = int(os.getenv("CHESSBOARD_ROWS"))
 CHESSBOARD_COLUMNS = int(os.getenv("CHESSBOARD_COLUMNS"))
 CHESSBOARD_SQUARE_SIZE = float(os.getenv("CHESSBOARD_SQUARE_SIZE"))
 
+# Path for camera parameters
+dirname = os.path.dirname(__file__)
+camera_parameters_path = os.path.join(dirname, "./camera_parameters")
+
 # Captured images lists
 images_0 = []
 images_1 = []
@@ -133,9 +137,8 @@ def stereo_calibration():
 
       # Draw and display chess board corners
       cv.drawChessboardCorners(frame_0, (CHESSBOARD_ROWS, CHESSBOARD_COLUMNS), corners_r_0, ret_0)
-      cv.drawChessboardCorners(frame_1, (CHESSBOARD_ROWS, CHESSBOARD_COLUMNS), corners_r_1, ret_1)
-
       cv.imshow("Chess Board 0", frame_0)
+      cv.drawChessboardCorners(frame_1, (CHESSBOARD_ROWS, CHESSBOARD_COLUMNS), corners_r_1, ret_1)
       cv.imshow("Chess Board 1", frame_1)
 
       cv.waitKey(1000)
@@ -147,10 +150,39 @@ def stereo_calibration():
       # Stereo calibration
       ret_stereo, CM_0, dist_0_stereo, CM_1, dist_1_stereo, R, T, E, F = cv.stereoCalibrate(obj_points, img_points_0, img_points_1, mtx_0, dist_0, mtx_1, dist_1, gray_0.shape[::-1], criteria=stereo_criteria, flags=cv.CALIB_FIX_INTRINSIC)
 
-  if calibrated_frames_counter == len(images_0):
+  if calibrated_frames_counter >= 10:
+    # Print RMSE
     print("Successfull calibration")
     print("RMSE: ", ret_stereo)
+
+    # Save calibration parameters
+    if not os.path.exists(camera_parameters_path):
+      os.makedirs(camera_parameters_path)
+    else:
+      np.save(f"{camera_parameters_path}/mtx_0.npy")
+      np.save(f"{camera_parameters_path}/dist_0.npy")
+      np.save(f"{camera_parameters_path}/mtx_1.npy")
+      np.save(f"{camera_parameters_path}/dist_1.npy")
+      np.save(f"{camera_parameters_path}/R.npy")
+      np.save(f"{camera_parameters_path}/T.npy")
+
+    # Obtain projection matrices
+    projection_matrix(mtx_0, mtx_1, R, T)
   else:
     print("Bad calibration, try again")
 
   cv.destroyAllWindows()
+
+def projection_matrix(mtx_0, mtx_1, R, T):
+    # RT matrix for camera_0
+    RT_0 = np.concatenate([np.eye(3), [[0], [0], [0]]], axis = -1)
+    # Projection matrix for camera_0
+    P_0 = mtx_0 @ RT_0
+
+    # RT matrix for camera_1
+    RT_1 = np.concatenate([R, T], axis = -1)
+    P_1 = mtx_1 @ RT_1  
+
+    # Save projection matrices
+    np.save(f"{camera_parameters_path}/P_0.npy")
+    np.save(f"{camera_parameters_path}/P_1.npy")
