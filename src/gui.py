@@ -4,9 +4,10 @@ import dotenv
 import tkinter as tk
 from tkinter import messagebox
 
-from camera_calibration_v2 import camera_calibration
+from hand_tracking import hand_tracking
+from camera_calibration import camera_calibration
 from test_cameras import test_cameras
-from utils.validate_number import validate_number
+from utils.validate_input import validate_input
 
 # Load .env file
 dotenv_file = dotenv.find_dotenv()
@@ -32,7 +33,7 @@ class GUI():
     self.view_title.pack(padx=(42, 42), pady=(42, 0))
 
     self.pixel_hand_tracking = tk.PhotoImage(width=1, height=1)
-    self.button_hand_tracking = tk.Button(master=self.root, text="Hand Tracking", font=("TkDefaultFont", 12), image=self.pixel_hand_tracking, width=160, height=40, compound="c")
+    self.button_hand_tracking = tk.Button(master=self.root, text="Hand Tracking", font=("TkDefaultFont", 12), image=self.pixel_hand_tracking, width=160, height=40, compound="c", command=hand_tracking)
     self.button_hand_tracking.pack(pady=(42, 0))
 
     self.pixel_camera_calibration = tk.PhotoImage(width=1, height=1)
@@ -194,7 +195,7 @@ class GUI():
       if key in ["MIN_HAND_DETECTION_CONFIDENCE", "MIN_HAND_PRESENCE_CONFIDENCE", "MIN_TRACKING_CONFIDENCE"]:
         in_range = True
 
-      if validate_number(input=value, type=type, range=in_range):
+      if validate_input(input=value, type=type, range=in_range):
         os.environ[key] = value
         dotenv.set_key(dotenv_path=dotenv_file, key_to_set=key, value_to_set=os.environ[key])
       else:

@@ -1,4 +1,4 @@
-def validate_number(input: str, type: str, range: bool) -> bool:
+def validate_input(input: str, type: str, range: bool) -> bool:
   if type.lower() == "int":
     try:
       value = int(input)
