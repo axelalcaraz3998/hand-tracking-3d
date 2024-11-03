@@ -19,7 +19,11 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 
 # Create gesture recognizer instance
 def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
-  print(f"Gesture recognition result: {result}")
+  # print(f"Gesture recognition result: {result}")
+  
+  if len(result.hand_landmarks) > 0 and len(result.gestures) > 0:
+    print(result.hand_landmarks[0])
+    print(result.gestures[0])
 
 options = GestureRecognizerOptions(
   base_options = BaseOptions(model_asset_path = model_path),

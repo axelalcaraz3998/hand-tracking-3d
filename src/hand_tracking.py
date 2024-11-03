@@ -5,10 +5,9 @@ import cv2 as cv
 import mediapipe as mp
 
 def hand_tracking():
-  print("========== Running Hand Tracking ==========")
-
   # Import utility functions
   from utils.draw_landmarks import draw_landmarks
+  from utils.write_gesture import write_gesture
   from utils.dlt import DLT
 
   # Load .env file
@@ -26,42 +25,47 @@ def hand_tracking():
 
   # Model path
   dirname = os.path.dirname(__file__)
-  model_path = os.path.join(dirname, "./models/hand_landmarker.task")
+  model_path = os.path.join(dirname, "./models/gesture_recognizer.task")
 
   # MediaPipe hand landmarker objects
   BaseOptions = mp.tasks.BaseOptions
-  BaseOptions = mp.tasks.BaseOptions
-  HandLandmarker = mp.tasks.vision.HandLandmarker
-  HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-  HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
+  GestureRecognizer = mp.tasks.vision.GestureRecognizer
+  GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
+  GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
   VisionRunningMode = mp.tasks.vision.RunningMode
 
   # Results dictionaries
   results_0 = {
     "hand_landmarks": None,
+    "gesture": None,
   }
 
   results_1 = {
     "hand_landmarks": None,
+    "gesture": None
   }
 
   # Callback functions
-  def result_callback_0(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+  def result_callback_0(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
     # If a hand is detected assing hand landmarker result to results dictionary
-    if len(result.hand_landmarks) > 0:
+    if len(result.hand_landmarks) > 0 and len(result.gestures) > 0:
       results_0["hand_landmarks"] = result.hand_landmarks[0]
+      results_0["gesture"] = result.gestures[0]
     else:
       results_0["hand_landmarks"] = None
+      results_0["gesture"] = None
 
-  def result_callback_1(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+  def result_callback_1(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
     # If a hand is detected assing hand landmarker result to results dictionary
-    if len(result.hand_landmarks) > 0:
+    if len(result.hand_landmarks) > 0 and len(result.gestures) > 0:
       results_1["hand_landmarks"] = result.hand_landmarks[0]
+      results_1["gesture"] = result.gestures[0]
     else:
       results_1["hand_landmarks"] = None
+      results_1["gesture"] = None
 
   # Hand landmarker options
-  options_0 = HandLandmarkerOptions(
+  options_0 = GestureRecognizerOptions(
     base_options = BaseOptions(model_asset_path = model_path),
     running_mode = VisionRunningMode.LIVE_STREAM,
     num_hands = 1,
@@ -71,7 +75,7 @@ def hand_tracking():
     result_callback = result_callback_0
   )
 
-  options_1 = HandLandmarkerOptions(
+  options_1 = GestureRecognizerOptions(
     base_options = BaseOptions(model_asset_path = model_path),
     running_mode = VisionRunningMode.LIVE_STREAM,
     num_hands = 1,
@@ -80,6 +84,8 @@ def hand_tracking():
     min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
     result_callback = result_callback_1
   )
+
+  print("========== Running Hand Tracking ==========")
   
   # Set webcam capture
   capture_0 = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)
@@ -103,8 +109,8 @@ def hand_tracking():
   print("Camera 1 is working")
 
   # Create hand landmarker instances
-  landmarker_0 = HandLandmarker.create_from_options(options_0)
-  landmarker_1 = HandLandmarker.create_from_options(options_1)
+  landmarker_0 = GestureRecognizer.create_from_options(options_0)
+  landmarker_1 = GestureRecognizer.create_from_options(options_1)
 
   # Frame timestamps initialization
   frame_timestamp_0 = 0
@@ -132,15 +138,17 @@ def hand_tracking():
     mp_image_1 = mp.Image(image_format = mp.ImageFormat.SRGB, data = frame_1)
 
     # Detect hand ladmarks
-    landmarker_0.detect_async(mp_image_0, frame_timestamp_0)
-    landmarker_1.detect_async(mp_image_1, frame_timestamp_1)
+    landmarker_0.recognize_async(mp_image_0, frame_timestamp_0)
+    landmarker_1.recognize_async(mp_image_1, frame_timestamp_1)
 
     # If landmarks are detected, draw them into frame
-    if results_0["hand_landmarks"]:
+    if results_0["hand_landmarks"] and results_0["gesture"]:
       draw_landmarks(frame_0, FRAME_WIDTH, FRAME_HEIGHT, results_0["hand_landmarks"])
+      write_gesture(frame_0, results_0["gesture"])
 
-    if results_1["hand_landmarks"]:
+    if results_1["hand_landmarks"] and results_1["gesture"]:
       draw_landmarks(frame_1, FRAME_WIDTH, FRAME_HEIGHT, results_1["hand_landmarks"])
+      write_gesture(frame_1, results_1["gesture"])
 
     # If both landmarks are detected, triangulate position of center point
     if results_0["hand_landmarks"] and results_1["hand_landmarks"]:
