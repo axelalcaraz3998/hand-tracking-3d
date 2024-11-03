@@ -4,34 +4,28 @@ import dotenv
 import cv2 as cv
 import numpy as np
 
-# Load .env file
-dotenv_file = dotenv.find_dotenv()
-dotenv.load_dotenv(dotenv_file)
-
-# Load environment variables
-CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
-CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
-FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
-FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
-CHESSBOARD_ROWS = int(os.getenv("CHESSBOARD_ROWS"))
-CHESSBOARD_COLUMNS = int(os.getenv("CHESSBOARD_COLUMNS"))
-CHESSBOARD_SQUARE_SIZE = float(os.getenv("CHESSBOARD_SQUARE_SIZE"))
-
-# Path for camera parameters
-dirname = os.path.dirname(__file__)
-camera_parameters_path = os.path.join(dirname, "./camera_parameters")
-
 # Captured images lists
 images_0 = []
 images_1 = []
 
 def camera_calibration():
   print("========== Running Camera Calibration ==========")
+
+  # Load .env file
+  dotenv_file = dotenv.find_dotenv()
+  dotenv.load_dotenv(dotenv_file)
+
   capture_frames()
   stereo_calibration()
   print("========== Exiting Camera Calibration ==========")
 
 def capture_frames():
+  # Load environment variables
+  CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
+  CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
+  FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
+  FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
+
   # Set webcam capture
   capture_0 = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)
   capture_1 = cv.VideoCapture(CAMERA_1_ID, cv.CAP_DSHOW)
@@ -92,6 +86,15 @@ def capture_frames():
   cv.destroyAllWindows()
 
 def stereo_calibration():
+  # Path for camera parameters
+  dirname = os.path.dirname(__file__)
+  camera_parameters_path = os.path.join(dirname, "./camera_parameters")
+
+  # Load environment variables
+  CHESSBOARD_ROWS = int(os.getenv("CHESSBOARD_ROWS"))
+  CHESSBOARD_COLUMNS = int(os.getenv("CHESSBOARD_COLUMNS"))
+  CHESSBOARD_SQUARE_SIZE = float(os.getenv("CHESSBOARD_SQUARE_SIZE"))
+
   # Termination criteria
   criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)   
   # Stereo calibration criteria
@@ -174,6 +177,10 @@ def stereo_calibration():
   cv.destroyAllWindows()
 
 def projection_matrix(mtx_0, mtx_1, R, T):
+    # Path for camera parameters
+    dirname = os.path.dirname(__file__)
+    camera_parameters_path = os.path.join(dirname, "./camera_parameters")    
+
     # RT matrix for camera_0
     RT_0 = np.concatenate([np.eye(3), [[0], [0], [0]]], axis = -1)
     # Projection matrix for camera_0

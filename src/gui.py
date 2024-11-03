@@ -4,9 +4,6 @@ import dotenv
 import tkinter as tk
 from tkinter import messagebox
 
-from hand_tracking import hand_tracking
-from camera_calibration import camera_calibration
-from test_cameras import test_cameras
 from utils.validate_input import validate_input
 
 # Load .env file
@@ -25,6 +22,11 @@ class GUI():
     self.root.mainloop()
 
   def main_menu_view(self):
+    # Load utility functions
+    from hand_tracking import hand_tracking
+    from camera_calibration import camera_calibration
+    from test_cameras import test_cameras
+
     # Destroy all widgets
     for i in self.root.winfo_children():
       i.destroy()

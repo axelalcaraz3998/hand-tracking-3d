@@ -3,18 +3,18 @@ import os
 import dotenv
 import cv2 as cv
 
-# Load .env file
-dotenv_file = dotenv.find_dotenv()
-dotenv.load_dotenv(dotenv_file)
-
-# Load environment variables
-CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
-CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
-FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
-FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
-
 def test_cameras():
   print("========== Running Test Cameras ==========")
+
+  # Load .env file
+  dotenv_file = dotenv.find_dotenv()
+  dotenv.load_dotenv(dotenv_file)
+
+  # Load environment variables
+  CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
+  CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
+  FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
+  FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))  
   
   # Set webcam capture
   capture_0 = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)

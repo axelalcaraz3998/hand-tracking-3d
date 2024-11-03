@@ -2,84 +2,84 @@ import os
 
 import dotenv
 import cv2 as cv
-import numpy as np
 import mediapipe as mp
-
-from utils.draw_landmarks import draw_landmarks
-from utils.dlt import DLT
-
-# Load .env file
-dotenv_file = dotenv.find_dotenv()
-dotenv.load_dotenv(dotenv_file)
-
-# Load environment variables
-CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
-CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
-FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
-FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
-MIN_HAND_DETECTION_CONFIDENCE = float(os.getenv("MIN_HAND_DETECTION_CONFIDENCE"))
-MIN_HAND_PRESENCE_CONFIDENCE = float(os.getenv("MIN_HAND_PRESENCE_CONFIDENCE"))
-MIN_TRACKING_CONFIDENCE = float(os.getenv("MIN_TRACKING_CONFIDENCE"))
-
-# Model path
-dirname = os.path.dirname(__file__)
-model_path = os.path.join(dirname, "./models/hand_landmarker.task")
-
-# MediaPipe hand landmarker objects
-BaseOptions = mp.tasks.BaseOptions
-BaseOptions = mp.tasks.BaseOptions
-HandLandmarker = mp.tasks.vision.HandLandmarker
-HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
-VisionRunningMode = mp.tasks.vision.RunningMode
-
-# Results dictionaries
-results_0 = {
-  "hand_landmarks": None,
-}
-
-results_1 = {
-  "hand_landmarks": None,
-}
-
-# Callback functions
-def result_callback_0(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
-  # If a hand is detected assing hand landmarker result to results dictionary
-  if len(result.hand_landmarks) > 0:
-    results_0["hand_landmarks"] = result.hand_landmarks[0]
-  else:
-    results_0["hand_landmarks"] = None
-
-def result_callback_1(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
-  # If a hand is detected assing hand landmarker result to results dictionary
-  if len(result.hand_landmarks) > 0:
-    results_1["hand_landmarks"] = result.hand_landmarks[0]
-  else:
-    results_1["hand_landmarks"] = None
-
-# Hand landmarker options
-options_0 = HandLandmarkerOptions(
-  base_options = BaseOptions(model_asset_path = model_path),
-  running_mode = VisionRunningMode.LIVE_STREAM,
-  num_hands = 1,
-  min_hand_detection_confidence = MIN_HAND_DETECTION_CONFIDENCE,
-  min_hand_presence_confidence = MIN_HAND_PRESENCE_CONFIDENCE,
-  min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
-  result_callback = result_callback_0
-)
-
-options_1 = HandLandmarkerOptions(
-  base_options = BaseOptions(model_asset_path = model_path),
-  running_mode = VisionRunningMode.LIVE_STREAM,
-  num_hands = 1,
-  min_hand_detection_confidence = MIN_HAND_DETECTION_CONFIDENCE,
-  min_hand_presence_confidence = MIN_HAND_PRESENCE_CONFIDENCE,
-  min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
-  result_callback = result_callback_1
-)
 
 def hand_tracking():
   print("========== Running Hand Tracking ==========")
+
+  # Import utility functions
+  from utils.draw_landmarks import draw_landmarks
+  from utils.dlt import DLT
+
+  # Load .env file
+  dotenv_file = dotenv.find_dotenv()
+  dotenv.load_dotenv(dotenv_file)
+
+  # Load environment variables
+  CAMERA_0_ID = int(os.getenv("CAMERA_0_ID"))
+  CAMERA_1_ID = int(os.getenv("CAMERA_1_ID"))
+  FRAME_WIDTH = int(os.getenv("FRAME_WIDTH"))
+  FRAME_HEIGHT = int(os.getenv("FRAME_HEIGHT"))
+  MIN_HAND_DETECTION_CONFIDENCE = float(os.getenv("MIN_HAND_DETECTION_CONFIDENCE"))
+  MIN_HAND_PRESENCE_CONFIDENCE = float(os.getenv("MIN_HAND_PRESENCE_CONFIDENCE"))
+  MIN_TRACKING_CONFIDENCE = float(os.getenv("MIN_TRACKING_CONFIDENCE"))
+
+  # Model path
+  dirname = os.path.dirname(__file__)
+  model_path = os.path.join(dirname, "./models/hand_landmarker.task")
+
+  # MediaPipe hand landmarker objects
+  BaseOptions = mp.tasks.BaseOptions
+  BaseOptions = mp.tasks.BaseOptions
+  HandLandmarker = mp.tasks.vision.HandLandmarker
+  HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
+  HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
+  VisionRunningMode = mp.tasks.vision.RunningMode
+
+  # Results dictionaries
+  results_0 = {
+    "hand_landmarks": None,
+  }
+
+  results_1 = {
+    "hand_landmarks": None,
+  }
+
+  # Callback functions
+  def result_callback_0(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+    # If a hand is detected assing hand landmarker result to results dictionary
+    if len(result.hand_landmarks) > 0:
+      results_0["hand_landmarks"] = result.hand_landmarks[0]
+    else:
+      results_0["hand_landmarks"] = None
+
+  def result_callback_1(result: HandLandmarkerResult, output_image: mp.Image, timestamp_ms: int): # type: ignore
+    # If a hand is detected assing hand landmarker result to results dictionary
+    if len(result.hand_landmarks) > 0:
+      results_1["hand_landmarks"] = result.hand_landmarks[0]
+    else:
+      results_1["hand_landmarks"] = None
+
+  # Hand landmarker options
+  options_0 = HandLandmarkerOptions(
+    base_options = BaseOptions(model_asset_path = model_path),
+    running_mode = VisionRunningMode.LIVE_STREAM,
+    num_hands = 1,
+    min_hand_detection_confidence = MIN_HAND_DETECTION_CONFIDENCE,
+    min_hand_presence_confidence = MIN_HAND_PRESENCE_CONFIDENCE,
+    min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
+    result_callback = result_callback_0
+  )
+
+  options_1 = HandLandmarkerOptions(
+    base_options = BaseOptions(model_asset_path = model_path),
+    running_mode = VisionRunningMode.LIVE_STREAM,
+    num_hands = 1,
+    min_hand_detection_confidence = MIN_HAND_DETECTION_CONFIDENCE,
+    min_hand_presence_confidence = MIN_HAND_PRESENCE_CONFIDENCE,
+    min_tracking_confidence = MIN_TRACKING_CONFIDENCE,
+    result_callback = result_callback_1
+  )
   
   # Set webcam capture
   capture_0 = cv.VideoCapture(CAMERA_0_ID, cv.CAP_DSHOW)

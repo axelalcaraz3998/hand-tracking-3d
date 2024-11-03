@@ -3,13 +3,18 @@ import os
 import numpy as np
 import scipy.linalg
 
-dirname = os.path.dirname(__file__)
-camera_parameters_path = os.path.join(dirname, "../camera_parameters")
-
-P_0 = np.load(f"{camera_parameters_path}/P_0.npy")
-P_1 = np.load(f"{camera_parameters_path}/P_1.npy")
-
 def DLT(point_0, point_1):
+  # Load camera parameters
+  dirname = os.path.dirname(__file__)
+  camera_parameters_path = os.path.join(dirname, "../camera_parameters")
+
+  if not os.path.exists(camera_parameters_path):
+    print("Could not find camera parameters, make sure to calibrate the camera first")
+    return
+
+  P_0 = np.load(f"{camera_parameters_path}/P_0.npy")
+  P_1 = np.load(f"{camera_parameters_path}/P_1.npy")
+
   A = [point_0[1] * P_0[2, :] - P_0[1, :],
         P_0[0, :] - point_0[0] * P_0[2, :],
         point_1[1] * P_1[2, :] - P_1[1, :],
