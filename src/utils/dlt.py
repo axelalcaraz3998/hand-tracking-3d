@@ -4,6 +4,8 @@ import numpy as np
 import scipy.linalg
 
 def DLT(point_0, point_1):
+  from utils.inverse_kinematics import inverse_kinematics
+
   # Load camera parameters
   dirname = os.path.dirname(__file__)
   camera_parameters_path = os.path.join(dirname, "../camera_parameters")
@@ -25,5 +27,7 @@ def DLT(point_0, point_1):
   B = A.transpose() @ A
 
   U, s, Vh = scipy.linalg.svd(B, full_matrices = False)
+  coords = Vh[3, 0:3] / Vh[3, 3]
 
-  print(Vh[3, 0:3] / Vh[3, 3])
+  # print(coords)
+  inverse_kinematics(coords)
