@@ -19,22 +19,40 @@ joint_1_obj = sim.getObject("./joint_1")
 joint_2_obj = sim.getObject("./joint_2")
 
 def inverse_kinematics(coords):
+  # Get coordinates
+  x = coords[1]
+  y = coords[0]
+  z = coords[2]
+  
+  # Normalize coordinates
+  x = -x
+  x += 25
+  if x > 25:
+    x = 25
+  elif x < 0:
+    x = 0
+
+  if y > 25:
+    y = 25
+  elif y < -25:
+    y = -25
+
+  z -= 30
+  if z > 25:
+    z = 25
+  elif z < 0:
+    z = 0
+
   # Joint 0
-  theta[0] = np.atan2(coords[1], coords[0])
+  theta[0] = np.atan2(y, x)
   # Joint 2
-  theta[2] = -np.arccos(((np.sqrt(coords[0]**2 + coords[1]**2))**2 + (coords[2] - d_1)**2 - a_2**2 - d_4**2) / (2*a_2 * d_4))
+  theta[2] = -np.arccos(((np.sqrt(x**2 + y**2))**2 + (z - d_1)**2 - a_2**2 - d_4**2) / (2*a_2 * d_4))
   # Joint 1
-  theta[1] = np.atan2((coords[2] - d_1), (np.sqrt(coords[0]**2 + coords[1]**2))) - np.atan2((d_4*np.sin(theta[2])), (a_2 + d_4*np.cos(theta[2])))
+  theta[1] = np.atan2((z - d_1), (np.sqrt(x**2 + y**2))) - np.atan2((d_4*np.sin(theta[2])), (a_2 + d_4*np.cos(theta[2])))
 
-  # Convert from rad to deg and add offset
-  angles[0] = np.rad2deg(theta[0]) + 0
-  angles[1] = np.rad2deg(theta[1]) + 0
-  angles[2] = np.rad2deg(theta[2]) + 0
-  print(angles)
+  sim.setJointTargetPosition(joint_2_obj, theta[2] + (np.pi * 0.5))
+  sim.setJointTargetPosition(joint_1_obj, theta[1] + 0)
+  sim.setJointTargetPosition(joint_0_obj, theta[0] + 0)
 
-  sim.setJointTargetPosition(joint_2_obj, angles[2])
-  sim.setJointTargetPosition(joint_1_obj, angles[1])
-  sim.setJointTargetPosition(joint_0_obj, angles[0])
-
-coords = np.array([0, 0, 0])
-inverse_kinematics(coords)
+# coords = np.array([25, -25, 25])
+# inverse_kinematics(coords)
