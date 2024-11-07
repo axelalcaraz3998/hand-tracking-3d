@@ -29,5 +29,5 @@ def DLT(point_0, point_1):
   U, s, Vh = scipy.linalg.svd(B, full_matrices = False)
   coords = Vh[3, 0:3] / Vh[3, 3]
 
-  print(coords)
+  # print(coords)
   inverse_kinematics(coords)

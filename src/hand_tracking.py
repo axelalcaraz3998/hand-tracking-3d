@@ -8,6 +8,7 @@ def hand_tracking():
   # Import utility functions
   from utils.draw_landmarks import draw_landmarks
   from utils.write_gesture import write_gesture
+  from utils.hand_orientation import hand_orientation
   from utils.dlt import DLT
 
   # Load .env file
@@ -160,6 +161,11 @@ def hand_tracking():
       center_1_y = int(((results_1["hand_landmarks"][0].y + results_1["hand_landmarks"][9].y) / 2) * FRAME_HEIGHT)
       center_1 = [center_1_x, center_1_y]
 
+      # Get rotation of hand in Z coordinate
+      point_0 = [int(results_0["hand_landmarks"][0].x * FRAME_WIDTH), int(results_0["hand_landmarks"][0].y * FRAME_HEIGHT)]
+      point_1 = [int(results_0["hand_landmarks"][9].x * FRAME_WIDTH), int(results_0["hand_landmarks"][9].y * FRAME_HEIGHT)]
+      
+      hand_orientation(point_0, point_1)
       DLT(center_0, center_1)
 
     cv.imshow("Camera 0", frame_0)
