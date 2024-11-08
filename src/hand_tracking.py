@@ -9,6 +9,7 @@ def hand_tracking():
   from utils.draw_landmarks import draw_landmarks
   from utils.write_gesture import write_gesture
   from utils.hand_orientation import hand_orientation
+  from utils.inverse_kinematics import inverse_kinematics
   from utils.dlt import DLT
 
   # Load .env file
@@ -163,10 +164,34 @@ def hand_tracking():
 
       # Get rotation of hand in Z coordinate
       point_0 = [int(results_0["hand_landmarks"][0].x * FRAME_WIDTH), int(results_0["hand_landmarks"][0].y * FRAME_HEIGHT)]
-      point_1 = [int(results_0["hand_landmarks"][9].x * FRAME_WIDTH), int(results_0["hand_landmarks"][9].y * FRAME_HEIGHT)]
+      point_9 = [int(results_0["hand_landmarks"][9].x * FRAME_WIDTH), int(results_0["hand_landmarks"][9].y * FRAME_HEIGHT)]
+      z_rotation = hand_orientation(point_0, point_9)
+
+      # Get rotation of hand in Y coordinate
+      point_5_0 = [int(results_0["hand_landmarks"][5].x * FRAME_WIDTH), int(results_0["hand_landmarks"][5].y * FRAME_HEIGHT)]
+      point_5_1 = [int(results_1["hand_landmarks"][5].x * FRAME_WIDTH), int(results_1["hand_landmarks"][5].y * FRAME_HEIGHT)]
+
+      point_17_0 = [int(results_0["hand_landmarks"][17].x * FRAME_WIDTH), int(results_0["hand_landmarks"][17].y * FRAME_HEIGHT)]
+      point_17_1 = [int(results_1["hand_landmarks"][17].x * FRAME_WIDTH), int(results_1["hand_landmarks"][17].y * FRAME_HEIGHT)]
+
+      point_5_coords = DLT(point_5_0, point_5_1)
+      point_17_coords = DLT(point_17_0, point_17_1)
+      y_rotation = hand_orientation([point_5_coords[2], point_5_coords[0]], [point_17_coords[2], point_17_coords[0]]) # atan2(Z, X)
+
+      # Get rotation of hand in X coordinate
+      point_0_0 = [int(results_0["hand_landmarks"][0].x * FRAME_WIDTH), int(results_0["hand_landmarks"][0].y * FRAME_HEIGHT)]
+      point_0_1 = [int(results_1["hand_landmarks"][0].x * FRAME_WIDTH), int(results_1["hand_landmarks"][0].y * FRAME_HEIGHT)]
+
+      point_9_0 = [int(results_0["hand_landmarks"][9].x * FRAME_WIDTH), int(results_0["hand_landmarks"][9].y * FRAME_HEIGHT)]
+      point_9_1 = [int(results_1["hand_landmarks"][9].x * FRAME_WIDTH), int(results_1["hand_landmarks"][9].y * FRAME_HEIGHT)]
       
-      hand_orientation(point_0, point_1)
-      DLT(center_0, center_1)
+      point_0_coords = DLT(point_0_0, point_0_1)
+      point_9_coords = DLT(point_9_0, point_9_1) 
+      x_rotation = hand_orientation([point_0_coords[2], point_0_coords[1]], [point_9_coords[2], point_9_coords[1]]) # atan2(Z, Y)
+
+      # Inverse kinematics
+      hand_coords = DLT(center_0, center_1)
+      inverse_kinematics(hand_coords, [x_rotation, y_rotation, z_rotation])
 
     cv.imshow("Camera 0", frame_0)
     cv.imshow("Camera 1", frame_1)
