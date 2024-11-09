@@ -25,5 +25,6 @@ def DLT(point_0, point_1):
   B = A.transpose() @ A
 
   U, s, Vh = scipy.linalg.svd(B, full_matrices = False)
+  coords = Vh[3, 0:3] / Vh[3, 3]
 
-  print(Vh[3, 0:3] / Vh[3, 3])
+  return coords
